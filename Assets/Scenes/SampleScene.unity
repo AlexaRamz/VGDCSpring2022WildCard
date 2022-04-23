@@ -237,7 +237,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   angle: 0
-  spinSpd: 800
+  spinSpd: 850
 --- !u!212 &1704325438
 SpriteRenderer:
   m_ObjectHideFlags: 0
