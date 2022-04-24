@@ -14,7 +14,7 @@ public class speeeen : MonoBehaviour {
     // Update is called once per frame
     void Update() {
         angle += spinSpd * Time.deltaTime;
-        angle -= 360 * Mathf.Floor(angle/360);
+        angle %= 360;
 
         transform.eulerAngles = new Vector3(0,0,angle);
     }
