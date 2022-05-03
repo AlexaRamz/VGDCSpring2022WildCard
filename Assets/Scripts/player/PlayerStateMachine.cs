@@ -29,12 +29,15 @@ public class PlayerStateMachine : MonoBehaviour {
 	//component references (non-state-specific)
 	Rigidbody2D body;
 	new Camera camera;
+	SpriteRenderer spriteRenderer;
+	public Transform gun;
 
 	public void Awake() {
 		changeState(PlayerState.Normal);
 
 		body = GetComponent<Rigidbody2D>();
 		camera = Camera.main;
+		spriteRenderer = GetComponent<SpriteRenderer>();
 
 		keysPressed = new KeyPressSet();
 		mouseDir = Vector2.zero;
@@ -88,7 +91,7 @@ public class PlayerStateMachine : MonoBehaviour {
 		keysPressed.shootPressed = Input.GetMouseButtonDown(0);
 
 		//mouse aim
-		mouseDir = (transform.position - camera.ScreenToWorldPoint(Input.mousePosition));
+		mouseDir = camera.ScreenToWorldPoint(Input.mousePosition) - transform.position;
 		mouseDir.Normalize();
 
 		switch (playerState) {
@@ -159,6 +162,19 @@ public class PlayerStateMachine : MonoBehaviour {
 		direction.x = (_keysPressed.right ? 1 : 0) - (_keysPressed.left ? 1 : 0);
 		desiredVelocity = new Vector2(direction.x, 0f) * moveSpeed;
 
+		if (direction.x != 0 && Mathf.Sign(direction.x) == Mathf.Sign(velocity.x)) {
+			spriteRenderer.flipX = (Mathf.Sign(direction.x) == 1) ? false : true;
+		}
+
+		//gun rotation
+		if (aimDir.x > 0) {
+			gun.GetComponentInParent<SpriteRenderer>().flipX = false;
+			gun.eulerAngles = new Vector3(0, 0, Mathf.Rad2Deg * Mathf.Atan2(aimDir.y, aimDir.x));
+		} else {
+			gun.GetComponentInParent<SpriteRenderer>().flipX = true;
+			gun.eulerAngles = new Vector3(0, 0, Mathf.Rad2Deg * Mathf.Atan2(-aimDir.y, -aimDir.x));
+		}
+
 		//test force (to make sure gun recoil will work properly with platformer controller movement)
 		if (_keysPressed.shootPressed) {
 			Debug.Log("*vine boom sound effect*");
@@ -188,7 +204,7 @@ public class PlayerStateMachine : MonoBehaviour {
 		if (hasShot) {
 			hasShot = false;
 
-			velocity = aimDir * shootTestVelocity;
+			velocity = -aimDir * shootTestVelocity;
 		}
 
 		body.velocity = velocity;
