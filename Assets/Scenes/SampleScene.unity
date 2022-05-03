@@ -5100,6 +5100,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   playerState: 0
+  mouselessAim: 1
   gun: {fileID: 675205580}
   moveSpeed: 12
   maxAcceleration: 75

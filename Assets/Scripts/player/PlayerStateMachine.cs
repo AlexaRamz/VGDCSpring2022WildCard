@@ -26,6 +26,9 @@ public class PlayerStateMachine : MonoBehaviour {
 	KeyPressSet keysPressed;
 	Vector2 mouseDir;
 
+	//for coding and playtesting while im in lecture and cant use my mouse lmao, delete later - calli
+	public bool mouselessAim;
+
 	//component references (non-state-specific)
 	Rigidbody2D body;
 	new Camera camera;
@@ -87,12 +90,21 @@ public class PlayerStateMachine : MonoBehaviour {
 		//input assignment to key (and mouse button) presses, but these keybinds are just randomly chosen by me (calli) and we can change the controls here later
 		keysPressed.left = Input.GetKey(KeyCode.A);
 		keysPressed.right = Input.GetKey(KeyCode.D);
-		//unless we add something with continuous firing we only want the shoot input on an initial press
-		keysPressed.shootPressed = Input.GetMouseButtonDown(0);
 
-		//mouse aim
-		mouseDir = camera.ScreenToWorldPoint(Input.mousePosition) - transform.position;
-		mouseDir.Normalize();
+		if (!mouselessAim) {
+			//mouse aim
+			mouseDir = camera.ScreenToWorldPoint(Input.mousePosition) - transform.position;
+			mouseDir.Normalize();
+
+			//unless we add something with continuous firing we only want the shoot input on an initial press
+			keysPressed.shootPressed = Input.GetMouseButtonDown(0);
+		} else {
+			//***for coding and playtesting while im in lecture and cant use my mouse lmao, delete later - calli
+			mouseDir.x = (Input.GetKey(KeyCode.RightArrow) ? 1 : 0) - (Input.GetKey(KeyCode.LeftArrow) ? 1 : 0);
+			mouseDir.y = (Input.GetKey(KeyCode.UpArrow) ? 1 : 0) - (Input.GetKey(KeyCode.DownArrow) ? 1 : 0);
+
+			keysPressed.shootPressed = Input.GetKeyDown(KeyCode.Q);
+		}
 
 		switch (playerState) {
 			case PlayerState.Normal:
