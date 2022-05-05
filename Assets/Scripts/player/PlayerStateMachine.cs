@@ -46,22 +46,34 @@ public class PlayerStateMachine : MonoBehaviour {
 		mouseDir = Vector2.zero;
 	}
 
+	public void LateUpdate() {
+		lastVelocity = velocity;
+	}
+
 	#region **Collision Checks** (get onGround and friction)
-		private bool onGround;
+	private bool onGround;
+		bool last_onGround;
+		bool onWall;
+		bool last_onWall;
 		private float friction;
 
 		private void OnCollisionExit2D(Collision2D collision) {
 			onGround = false;
+			onWall = false;
 			friction = airFriction;
 		}
 
 		private void OnCollisionEnter2D(Collision2D collision) {
+			last_onGround = onGround;
+			last_onWall = onWall;
 			EvaluateCollision(collision);
 			friction = groundFriction;
 			//RetrieveFriction(collision);
 		}
 
 		private void OnCollisionStay2D(Collision2D collision) {
+			last_onGround = onGround;
+			last_onWall = onWall;
 			EvaluateCollision(collision);
 			friction = groundFriction;
 			//RetrieveFriction(collision);
@@ -70,7 +82,8 @@ public class PlayerStateMachine : MonoBehaviour {
 		private void EvaluateCollision(Collision2D collision) {
 			for (int i = 0; i < collision.contactCount; i++) {
 				Vector2 normal = collision.GetContact(i).normal;
-				onGround |= normal.y >= 0.9f;
+				onGround |= (normal.y >= 0.9f);
+				onWall |= (Mathf.Abs(normal.x) >= 0.9f);
 			}
 		}
 
@@ -103,7 +116,7 @@ public class PlayerStateMachine : MonoBehaviour {
 			mouseDir.x = (Input.GetKey(KeyCode.RightArrow) ? 1 : 0) - (Input.GetKey(KeyCode.LeftArrow) ? 1 : 0);
 			mouseDir.y = (Input.GetKey(KeyCode.UpArrow) ? 1 : 0) - (Input.GetKey(KeyCode.DownArrow) ? 1 : 0);
 
-			keysPressed.shootPressed = Input.GetKeyDown(KeyCode.Q);
+			keysPressed.shootPressed = Input.GetKeyDown(KeyCode.C);
 		}
 
 		switch (playerState) {
@@ -130,6 +143,7 @@ public class PlayerStateMachine : MonoBehaviour {
 
 	public void changeState(PlayerState newState) {
 		switch (playerState) {
+			//on state exit
 			case PlayerState.Normal:
 				hasShot = false;
 				break;
@@ -139,6 +153,7 @@ public class PlayerStateMachine : MonoBehaviour {
 				break;
 		}
 		switch (newState) {
+			//on state enter
 			case PlayerState.Normal:
 				break;
 			case PlayerState.Dead:
@@ -160,13 +175,16 @@ public class PlayerStateMachine : MonoBehaviour {
 	Vector2 direction;
 	Vector2 desiredVelocity;
 	Vector2 velocity;
+	Vector2 lastVelocity;
 	float maxSpeedChange;
 	float acceleration;
-	public float groundFriction;
-	public float airFriction;
+	[SerializeField] float groundFriction;
+	[SerializeField] float airFriction;
 
-	public float shootTestVelocity;
+	[SerializeField] float shootTestVelocity;
 	bool hasShot;
+
+	[SerializeField] float slideRatio;
 	
 	private void UpdateNormal(KeyPressSet _keysPressed, Vector2 aimDir)
 	{
@@ -189,7 +207,7 @@ public class PlayerStateMachine : MonoBehaviour {
 
 		//test force (to make sure gun recoil will work properly with platformer controller movement)
 		if (_keysPressed.shootPressed) {
-			Debug.Log("*vine boom sound effect*");
+			//Debug.Log("*vine boom sound effect*");
 			hasShot = true;
 		}
 	}
@@ -199,10 +217,22 @@ public class PlayerStateMachine : MonoBehaviour {
 		//movement
 		acceleration = onGround ? maxAcceleration : maxAirAcceleration;
 		maxSpeedChange = acceleration * Time.deltaTime;
-		if (onGround || direction.x == -Mathf.Sign(velocity.x) || (Mathf.Abs(velocity.x) < moveSpeed && direction.x != 0)) {
+		//if (onGround || direction.x == -Mathf.Sign(velocity.x) || (Mathf.Abs(velocity.x) < moveSpeed && direction.x != 0)) { // <- removes sliding
+		if ((onGround && direction.x != Mathf.Sign(velocity.x)) || direction.x == -Mathf.Sign(velocity.x) || (Mathf.Abs(velocity.x) < moveSpeed && direction.x != 0)) {
 			velocity.x = Mathf.MoveTowards(velocity.x, desiredVelocity.x, maxSpeedChange);
+		} else {
+			Debug.DrawRay(transform.position,Vector2.up,Color.blue,1f);
 		}
-		
+
+		//on land (for now just slide but we may want camera shake here later maybe?)
+		if (onGround && !last_onGround) {
+			//Debug.Log("landed");
+			//slide mechanic test
+			if (lastVelocity.magnitude > moveSpeed && direction.x != 0) {
+				velocity.x += direction.x * Mathf.Abs(lastVelocity.y) * slideRatio;
+			}
+		}
+
 		velocity.x -= friction * Mathf.Sign(velocity.x) * Time.deltaTime;
 
 		//aerial stuff
@@ -215,7 +245,7 @@ public class PlayerStateMachine : MonoBehaviour {
 		//test force
 		if (hasShot) {
 			hasShot = false;
-
+			
 			velocity = -aimDir * shootTestVelocity;
 		}
 

@@ -5106,10 +5106,11 @@ MonoBehaviour:
   maxAcceleration: 75
   maxAirAcceleration: 18
   fallingGravityScale: 5
-  defaultGravityScale: 3
-  groundFriction: 8
+  defaultGravityScale: 4
+  groundFriction: 3
   airFriction: 5
-  shootTestVelocity: 20
+  shootTestVelocity: 25
+  slideRatio: 0.7
 --- !u!68 &1507772742
 EdgeCollider2D:
   m_ObjectHideFlags: 0
