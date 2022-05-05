@@ -6,16 +6,20 @@ public class Projectiles : MonoBehaviour
 {
     public Transform launchPoint;
     public GameObject bulletPrefab;
-    [SerializeField, Range(0f, 300f)] private float speed = 10.0f;
+    [SerializeField, Range(0f, 300f)] private float rotationSpeed = 10.0f;
+    [SerializeField, Range(0f, 20f)] private float bulletSpeed = 20f;
     public float shootTime = 0.5f;
     public float timeForDeath = 2.0f;
 
     private float timer;
+    private Bullet bulletInfo;
 
 
     // Start is called before the first frame update
     void Start()
     {
+        bulletInfo = bulletPrefab.GetComponent<Bullet>();
+
         timer = shootTime;
         Shoot();
     }
@@ -28,6 +32,8 @@ public class Projectiles : MonoBehaviour
         //    Shoot();
         //}
 
+        bulletInfo.SetSpeed(bulletSpeed);
+
         if (timer > 0)
         {
             timer -= Time.deltaTime;
@@ -38,7 +44,7 @@ public class Projectiles : MonoBehaviour
             timer = shootTime;
         }
 
-        transform.Rotate(0f, 0f, speed * Time.deltaTime);
+        transform.Rotate(0f, 0f, rotationSpeed * Time.deltaTime);
     }
 
     private IEnumerator Shoot()
