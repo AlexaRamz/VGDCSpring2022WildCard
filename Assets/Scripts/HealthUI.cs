@@ -20,8 +20,9 @@ public class HealthUI : MonoBehaviour
     void Start()
     {
         playerHealth = player.GetComponent<Health>();
+        heartCount = playerHealth.GetPlayerHealth();
 
-        for (int i = 0; i < playerHealth.GetPlayerHealth(); i++)
+        for (int i = 0; i < heartCount; i++)
         {
             Vector3 newPos = new Vector3(heartsLocation.position.x + (heartSpacing * i),
                 heartsLocation.position.y, heartsLocation.position.z);
@@ -29,7 +30,7 @@ public class HealthUI : MonoBehaviour
             heartHolder = Instantiate(heartPrefab, newPos, Quaternion.identity);
             heartHolder.transform.parent = gameObject.transform;
 
-            Debug.Log(heartHolder);
+            //Debug.Log(heartHolder);
             heartList.Add(heartHolder);
         }
     }
@@ -42,10 +43,18 @@ public class HealthUI : MonoBehaviour
 
     public void LoseAHeart()
     {
-        if (heartList.Any())
+
+        heartCount = playerHealth.GetPlayerHealth();
+
+        if (heartCount >= 0)
         {
-            Destroy(heartList.Last());
-            heartList.Remove(heartList.Last());
+            HeartDisplay heartDisplay = heartList[heartCount].GetComponent<HeartDisplay>();
+            heartDisplay.TurnHeartGrey();
+
+
+
+            //Destroy(heartList.Last());
+            //heartList.Remove(heartList.Last());
         }
     }
 }
