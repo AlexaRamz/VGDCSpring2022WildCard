@@ -5100,7 +5100,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   playerState: 0
-  mouselessAim: 1
+  mouselessAim: 0
   gun: {fileID: 675205580}
   moveSpeed: 12
   maxAcceleration: 75
@@ -5110,7 +5110,9 @@ MonoBehaviour:
   groundFriction: 3
   airFriction: 5
   shootTestVelocity: 25
-  slideRatio: 0.7
+  slideSpd: 18
+  slide_stopSpd: 6
+  slideDirectionBuffer: 0.1
 --- !u!68 &1507772742
 EdgeCollider2D:
   m_ObjectHideFlags: 0

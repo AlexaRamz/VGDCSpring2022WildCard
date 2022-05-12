@@ -5,6 +5,7 @@ using UnityEngine;
 public enum PlayerState
 {
 	Normal,
+	Slide,
 	Dead
 }
 
@@ -12,6 +13,8 @@ public struct KeyPressSet
 {
 	public bool left;
 	public bool right;
+	public bool downPressed;
+	public bool down;
 	public bool shootPressed;
 }
 
@@ -24,7 +27,7 @@ public class PlayerStateMachine : MonoBehaviour {
 
 	//inputs
 	KeyPressSet keysPressed;
-	Vector2 mouseDir;
+	Vector2 aimDir;
 
 	//for coding and playtesting while im in lecture and cant use my mouse lmao, delete later - calli
 	public bool mouselessAim;
@@ -43,7 +46,7 @@ public class PlayerStateMachine : MonoBehaviour {
 		spriteRenderer = GetComponent<SpriteRenderer>();
 
 		keysPressed = new KeyPressSet();
-		mouseDir = Vector2.zero;
+		aimDir = Vector2.zero;
 	}
 
 	public void LateUpdate() {
@@ -103,40 +106,46 @@ public class PlayerStateMachine : MonoBehaviour {
 		//input assignment to key (and mouse button) presses, but these keybinds are just randomly chosen by me (calli) and we can change the controls here later
 		keysPressed.left = Input.GetKey(KeyCode.A);
 		keysPressed.right = Input.GetKey(KeyCode.D);
+		keysPressed.downPressed = Input.GetKeyDown(KeyCode.S);
+		keysPressed.down = Input.GetKey(KeyCode.S);
 
 		if (!mouselessAim) {
 			//mouse aim
-			mouseDir = camera.ScreenToWorldPoint(Input.mousePosition) - transform.position;
-			mouseDir.Normalize();
+			aimDir = camera.ScreenToWorldPoint(Input.mousePosition) - transform.position;
+			aimDir.Normalize();
 
 			//unless we add something with continuous firing we only want the shoot input on an initial press
 			keysPressed.shootPressed = Input.GetMouseButtonDown(0);
 		} else {
 			//***for coding and playtesting while im in lecture and cant use my mouse lmao, delete later - calli
-			mouseDir.x = (Input.GetKey(KeyCode.RightArrow) ? 1 : 0) - (Input.GetKey(KeyCode.LeftArrow) ? 1 : 0);
-			mouseDir.y = (Input.GetKey(KeyCode.UpArrow) ? 1 : 0) - (Input.GetKey(KeyCode.DownArrow) ? 1 : 0);
+			aimDir.x = (Input.GetKey(KeyCode.RightArrow) ? 1 : 0) - (Input.GetKey(KeyCode.LeftArrow) ? 1 : 0);
+			aimDir.y = (Input.GetKey(KeyCode.UpArrow) ? 1 : 0) - (Input.GetKey(KeyCode.DownArrow) ? 1 : 0);
 
 			keysPressed.shootPressed = Input.GetKeyDown(KeyCode.C);
 		}
 
 		switch (playerState) {
 			case PlayerState.Normal:
-				UpdateNormal(keysPressed, mouseDir);
+				UpdateNormal();
+				break;
+			case PlayerState.Slide:
+				UpdateSlide();
 				break;
 			case PlayerState.Dead:
-				UpdateDead(keysPressed);
+				UpdateDead();
 				break;
 		}
 	}
 	public void FixedUpdate() {
-		
-
 		switch (playerState) {
 			case PlayerState.Normal:
-				FixedUpdateNormal(keysPressed, mouseDir);
+				FixedUpdateNormal();
+				break;
+			case PlayerState.Slide:
+				FixedUpdateSlide();
 				break;
 			case PlayerState.Dead:
-				FixedUpdateDead(keysPressed);
+				FixedUpdateDead();
 				break;
 		}
 	}
@@ -145,7 +154,11 @@ public class PlayerStateMachine : MonoBehaviour {
 		switch (playerState) {
 			//on state exit
 			case PlayerState.Normal:
+				startSlide = false;
 				hasShot = false;
+				slideReverseTime = -1;
+				break;
+			case PlayerState.Slide:
 				break;
 			case PlayerState.Dead:
 				break;
@@ -155,6 +168,25 @@ public class PlayerStateMachine : MonoBehaviour {
 		switch (newState) {
 			//on state enter
 			case PlayerState.Normal:
+				break;
+			case PlayerState.Slide:
+				//add slideSpd
+				int slideDir;
+				if (Mathf.Abs(velocity.x) < slide_stopSpd) {
+					if (direction.x != 0) {
+						slideDir = (int)direction.x;
+					} else {
+						slideDir = spriteRenderer.flipX ? -1 : 1;
+						slideReverseTime = Time.time;
+					}
+				} else {
+					slideDir = (int)Mathf.Sign(velocity.x);
+				}
+				if (onGround && !last_onGround) {
+					velocity.x += slideSpd * slideDir;
+				} else {
+					velocity.x = slideSpd * slideDir;
+				}
 				break;
 			case PlayerState.Dead:
 				break;
@@ -182,14 +214,12 @@ public class PlayerStateMachine : MonoBehaviour {
 	[SerializeField] float airFriction;
 
 	[SerializeField] float shootTestVelocity;
+	bool startSlide;
 	bool hasShot;
-
-	[SerializeField] float slideRatio;
-	
-	private void UpdateNormal(KeyPressSet _keysPressed, Vector2 aimDir)
+	private void UpdateNormal()
 	{
 		//movement
-		direction.x = (_keysPressed.right ? 1 : 0) - (_keysPressed.left ? 1 : 0);
+		direction.x = (keysPressed.right ? 1 : 0) - (keysPressed.left ? 1 : 0);
 		desiredVelocity = new Vector2(direction.x, 0f) * moveSpeed;
 
 		if (direction.x != 0 && Mathf.Sign(direction.x) == Mathf.Sign(velocity.x)) {
@@ -205,33 +235,37 @@ public class PlayerStateMachine : MonoBehaviour {
 			gun.eulerAngles = new Vector3(0, 0, Mathf.Rad2Deg * Mathf.Atan2(-aimDir.y, -aimDir.x));
 		}
 
-		//test force (to make sure gun recoil will work properly with platformer controller movement)
-		if (_keysPressed.shootPressed) {
-			//Debug.Log("*vine boom sound effect*");
+		//shoot input
+		if (keysPressed.shootPressed) {
 			hasShot = true;
 		}
+
+		//enter slide
+		if (keysPressed.downPressed) {
+			startSlide = true;
+		}
+		if (!keysPressed.down) {
+			startSlide = false;
+		}
 	}
-	private void FixedUpdateNormal(KeyPressSet _keysPressed, Vector2 aimDir) {
+	private void FixedUpdateNormal() {
 		velocity = body.velocity;
 
 		//movement
 		acceleration = onGround ? maxAcceleration : maxAirAcceleration;
 		maxSpeedChange = acceleration * Time.deltaTime;
-		//if (onGround || direction.x == -Mathf.Sign(velocity.x) || (Mathf.Abs(velocity.x) < moveSpeed && direction.x != 0)) { // <- removes sliding
-		if ((onGround && direction.x != Mathf.Sign(velocity.x)) || direction.x == -Mathf.Sign(velocity.x) || (Mathf.Abs(velocity.x) < moveSpeed && direction.x != 0)) {
+		//if ((onGround && direction.x != Mathf.Sign(velocity.x)) || direction.x == -Mathf.Sign(velocity.x) || (Mathf.Abs(velocity.x) < moveSpeed && direction.x != 0)) {
+		if (onGround || direction.x == -Mathf.Sign(velocity.x) || (Mathf.Abs(velocity.x) < moveSpeed && direction.x != 0)) {
 			velocity.x = Mathf.MoveTowards(velocity.x, desiredVelocity.x, maxSpeedChange);
-		} else {
-			Debug.DrawRay(transform.position,Vector2.up,Color.blue,1f);
 		}
 
-		//on land (for now just slide but we may want camera shake here later maybe?)
-		if (onGround && !last_onGround) {
+		//on land (we may want camera shake here later maybe?)
+		/*if (onGround && !last_onGround) {
 			//Debug.Log("landed");
-			//slide mechanic test
 			if (lastVelocity.magnitude > moveSpeed && direction.x != 0) {
 				velocity.x += direction.x * Mathf.Abs(lastVelocity.y) * slideRatio;
 			}
-		}
+		}*/
 
 		velocity.x -= friction * Mathf.Sign(velocity.x) * Time.deltaTime;
 
@@ -245,19 +279,53 @@ public class PlayerStateMachine : MonoBehaviour {
 		//test force
 		if (hasShot) {
 			hasShot = false;
-			
+
 			velocity = -aimDir * shootTestVelocity;
 		}
 
+		if (startSlide && onGround) {
+			changeState(PlayerState.Slide);
+		}
+
+		//apply final velocity to rigidbody
 		body.velocity = velocity;
 	}
 
+	//slide state variables
+	[SerializeField] float slideSpd;
+	[SerializeField] float slide_stopSpd;
+
+	[SerializeField] float slideDirectionBuffer;
+	float slideReverseTime;
+	private void UpdateSlide() {
+		direction.x = (keysPressed.right ? 1 : 0) - (keysPressed.left ? 1 : 0);
+	}
+	private void FixedUpdateSlide() {
+		velocity = body.velocity;
+
+		//apply friction
+		velocity.x -= friction * Mathf.Sign(velocity.x) * Time.deltaTime;
+
+		//reverse slide direction on buffered input
+		if (Time.time-slideReverseTime < slideDirectionBuffer && direction.x == -Mathf.Sign(velocity.x)) {
+			velocity.x *= -1;
+			slideReverseTime = -1;
+		}
+
+		//exit slide
+		if (!keysPressed.down || !onGround || Mathf.Abs(velocity.x) < slide_stopSpd) {
+			changeState(PlayerState.Normal);
+		}
+
+		//apply final velocity to rigidbody
+		body.velocity = velocity;
+	}
 
 	// function does nothing
-	private void UpdateDead(KeyPressSet keysPressed)
+	private void UpdateDead()
 	{
 	}
 	//function also does nothing but this time its on ~physics updates~ instead of frames
-	private void FixedUpdateDead(KeyPressSet keysPressed) {
+	private void FixedUpdateDead() {
 	}
 }
