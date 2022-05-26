@@ -27,8 +27,9 @@ public class HealthUI : MonoBehaviour
             Vector3 newPos = new Vector3(heartsLocation.position.x + (heartSpacing * i),
                 heartsLocation.position.y, heartsLocation.position.z);
 
-            heartHolder = Instantiate(heartPrefab, newPos, Quaternion.identity);
-            heartHolder.transform.parent = gameObject.transform;
+            heartHolder = Instantiate(heartPrefab);
+            heartHolder.transform.SetParent(gameObject.transform, false);
+            heartHolder.transform.position = newPos;
 
             //Debug.Log(heartHolder);
             heartList.Add(heartHolder);
