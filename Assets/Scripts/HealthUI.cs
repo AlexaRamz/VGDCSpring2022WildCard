@@ -42,6 +42,14 @@ public class HealthUI : MonoBehaviour
         
     }
 
+    public void ResetHearts()
+    {
+        foreach (GameObject heart in heartList)
+        {
+            HeartDisplay heartDisplay = heart.GetComponent<HeartDisplay>();
+            heartDisplay.TurnHeartRed();
+        }
+    }
     public void LoseAHeart()
     {
 

@@ -12,9 +12,12 @@ public class Health : MonoBehaviour
     public float invinciblityPeriod = 0.5f;
     private bool invincible;
 
+    public GameObject spawnPoint;
+
     private void Start()
     {
         playerState = gameObject.GetComponent<PlayerStateMachine>();
+        transform.position = spawnPoint.transform.position;
     }
 
     // Update is called once per frame
@@ -52,7 +55,9 @@ public class Health : MonoBehaviour
 
             if (playerHealth <= 0)
             {
-                playerState.changeState(PlayerState.Dead);
+                transform.position = spawnPoint.transform.position;
+                playerHealth = 4;
+                healthDisplay.ResetHearts();
             }
 
             healthDisplay.LoseAHeart();
