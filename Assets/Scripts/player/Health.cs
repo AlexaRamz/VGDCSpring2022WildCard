@@ -23,12 +23,32 @@ public class Health : MonoBehaviour
         
     }
 
+    IEnumerator Flicker()
+    {
+        bool on = true;
+        for (int i = 0; i < 4; i++)
+        {
+            yield return new WaitForSeconds(0.05f);
+            if (on == true)
+            {
+                on = false;
+                gameObject.GetComponent<SpriteRenderer>().enabled = false;
+            }
+            else
+            {
+                on = true;
+                gameObject.GetComponent<SpriteRenderer>().enabled = true;
+            }
+        }
+        gameObject.GetComponent<SpriteRenderer>().enabled = true;
+    }
+
     public void LoseHealth()
     {
         if (!invincible)
         {
             playerHealth -= 1;
-            Debug.Log(playerHealth);
+            StartCoroutine(Flicker());
 
             if (playerHealth <= 0)
             {

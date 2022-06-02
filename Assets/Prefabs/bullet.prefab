@@ -135,4 +135,5 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   speed: 3
-  rb: {fileID: 5652429144342294745}
+  destroyed: {fileID: 0}
+  target: 1

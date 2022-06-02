@@ -7,8 +7,9 @@ public class Bullet : MonoBehaviour
 {
     public float speed = 20.0f;
     private Rigidbody2D rb;
-    private Health playerHealth;
     public Sprite destroyed;
+    public string target;
+    private bool canHit = true;
 
     // Start is called before the first frame update
     void Start()
@@ -24,37 +25,38 @@ public class Bullet : MonoBehaviour
 
     private IEnumerator DestroyAnim()
     {
+        canHit = false;
         SetSpeed(0);
         GetComponent<SpriteRenderer>().sprite = destroyed;
-        yield return new WaitForSeconds(0.1f);
+        if (GetComponent<ParticleSystem>())
+        {
+            Debug.Log("On");
+            GetComponent<ParticleSystem>().Play();
+        }
+        yield return new WaitForSeconds(0.5f);
         Destroy(gameObject);
     }
 
     private void OnTriggerEnter2D(Collider2D collision)
     {
-        if (collision.gameObject.CompareTag("Player"))
+        if (canHit)
         {
-            playerHealth = collision.gameObject.GetComponent<Health>();
-            playerHealth.LoseHealth();
+            if (collision.gameObject.CompareTag(target))
+            {
+                if (collision.gameObject.GetComponent<Health>())
+                {
+                    collision.gameObject.GetComponent<Health>().LoseHealth();
+                }
+                else if (collision.gameObject.GetComponent<EnemyHealth>())
+                {
+                    collision.gameObject.GetComponent<EnemyHealth>().LoseHealth();
+                }
 
-            if (destroyed != null)
-            {
                 StartCoroutine(DestroyAnim());
             }
-            else
-            {
-                Destroy(gameObject);
-            }
-        }
-        else if (collision.gameObject.GetComponent<Tilemap>())
-        {
-            if (destroyed != null)
+            else if (collision.gameObject.GetComponent<Tilemap>())
             {
                 StartCoroutine(DestroyAnim());
-            }
-            else
-            {
-                Destroy(gameObject);
             }
         }
     }

@@ -37,6 +37,7 @@ public class PlayerStateMachine : MonoBehaviour {
 	new Camera camera;
 	SpriteRenderer spriteRenderer;
 	public Transform gun;
+	Transform launchPoint;
 
 	public void Awake() {
 		changeState(PlayerState.Normal);
@@ -47,6 +48,8 @@ public class PlayerStateMachine : MonoBehaviour {
 
 		keysPressed = new KeyPressSet();
 		aimDir = Vector2.zero;
+
+		launchPoint = gun.Find("LaunchPoint");
 	}
 
 	public void LateUpdate() {
@@ -228,12 +231,13 @@ public class PlayerStateMachine : MonoBehaviour {
 
 		//gun rotation
 		if (aimDir.x > 0) {
-			gun.GetComponentInParent<SpriteRenderer>().flipX = false;
-			gun.eulerAngles = new Vector3(0, 0, Mathf.Rad2Deg * Mathf.Atan2(aimDir.y, aimDir.x));
-		} else {
-			gun.GetComponentInParent<SpriteRenderer>().flipX = true;
-			gun.eulerAngles = new Vector3(0, 0, Mathf.Rad2Deg * Mathf.Atan2(-aimDir.y, -aimDir.x));
+			gun.GetComponentInParent<SpriteRenderer>().flipY = false;
+		} 
+		else
+		{
+			gun.GetComponentInParent<SpriteRenderer>().flipY = true;
 		}
+		gun.eulerAngles = new Vector3(0, 0, Mathf.Rad2Deg * Mathf.Atan2(aimDir.y, aimDir.x));
 
 		//shoot input
 		if (keysPressed.shootPressed) {
@@ -281,6 +285,8 @@ public class PlayerStateMachine : MonoBehaviour {
 			hasShot = false;
 
 			velocity = -aimDir * shootTestVelocity;
+
+			GetComponent<ProjectileManager>().Shoot();
 		}
 
 		if (startSlide && onGround) {
